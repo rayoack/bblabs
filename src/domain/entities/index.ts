@@ -1,0 +1,9 @@
+export { ContestChallenges } from './contest-challenge.entity';
+export { Fields } from './field.entity';
+export { ProfessionalsType } from './professionals-type.entity';
+export { Users } from './user.entity';
+export { Squad } from './squad.entity';
+export { Vacancies } from './vacancy.entity';
+export { Votes } from './vote.entity';
+export { ChallengesResults } from './challenges-results.entity';
+export { DeliverablesStages } from './deliverables-stages.entity';

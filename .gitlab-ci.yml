@@ -1,0 +1,77 @@
+image: node:14.17.0
+
+.before_deploy: &before_deploy |-
+  npm i -g typescript serverless
+  npm i
+  npm run build
+  touch .env
+  echo "TYPEORM_CONNECTION=postgres" >> .env
+  echo "TYPEORM_DATABASE=$DATABASE_NAME" >> .env
+  echo "TYPEORM_HOST=$DATABASE_HOST" >> .env
+  echo "TYPEORM_PORT=$DATABASE_PORT" >> .env
+  echo "TYPEORM_USERNAME=$DATABASE_USER" >> .env
+  echo "TYPEORM_PASSWORD=$DATABASE_PASSWORD" >> .env
+  echo "TYPEORM_SYNCHRONIZE=false" >> .env
+  echo "TYPEORM_LOGGING=false" >> .env
+  echo "TYPEORM_ENTITIES=dist/domain/entities/*.entity.js" >> .env
+  echo "TYPEORM_ENTITIES_DIR=src/domain/entities" >> .env
+  echo "TYPEORM_MIGRATIONS=dist/database/migrations/*.js" >> .env
+  echo "TYPEORM_MIGRATIONS_DIR=src/database/migrations" >> .env
+  npm run migration:run
+
+stages:
+  - tests
+  - metrics
+  - deploy
+
+unit_tests_bbox_network_api:
+  stage: tests
+  before_script:
+    - npm i -g typescript && npm i
+  script:
+    - npm run lint
+    - npm run test:cov
+  artifacts:
+    paths:
+      - coverage/
+
+sonar_analysis:
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: ['']
+  stage: metrics
+  before_script:
+    - npm i -g typescript && npm i
+  script:
+    - sonar-scanner -Dsonar.qualitygate.wait=true -Dsonar.projectKey=$SONAR_PROJECT_KEY
+
+deploy_bbox_network_api_dev:
+  stage: deploy
+  before_script:
+    - *before_deploy
+  only:
+    - develop
+  script:
+    - TZ=America/Sao_Paulo sls deploy --region sa-east-1 --stage dev
+  environment: dev
+
+deploy_bbox_network_api_stg:
+  stage: deploy
+  before_script:
+    - *before_deploy
+  only:
+    - master
+  script:
+    - TZ=America/Sao_Paulo sls deploy --region sa-east-1 --stage stg
+  environment: stg
+
+deploy_bbox_network_api_prod:
+  stage: deploy
+  before_script:
+    - *before_deploy
+  when: manual
+  only:
+    - master
+  script:
+    - TZ=America/Sao_Paulo sls deploy --region sa-east-1 --stage prod
+  environment: prod

@@ -1,0 +1,116 @@
+service: bbox-network-api
+
+plugins:
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: sa-east-1
+  vpc:
+    securityGroupIds:
+      - sg-0e5a3fcf55d8dc724
+    subnetIds:
+      - subnet-0a10145b9c27ec865
+      - subnet-01e215ef9f933babf
+  tracing:
+    lambda: true
+    apiGateway: true
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 's3:WriteGetObjectResponse'
+        - 's3:Put*'
+        - 's3:Get*'
+        - 's3:List*'
+        - 's3:Delete*'
+      Resource:
+        - arn:aws:s3:::bossabox-labs-dev/*
+        - arn:aws:s3:::bossabox-labs-dev
+        - arn:aws:s3:::bossabox-labs-prod/*
+        - arn:aws:s3:::bossabox-labs-prod
+    - Effect: 'Allow'
+      Action:
+        - 'lambda:InvokeFunction'
+      Resource: '*'
+    - Effect: 'Allow'
+      Action:
+        - 'logs:CreateLogGroup'
+        - 'logs:CreateLogStream'
+        - 'logs:PutLogEvents'
+      Resource: '*'
+package:
+  individually: true
+  exclude:
+    - 'src/**'
+    - 'jest.config.js'
+    - 'tsconfig.json'
+    - 'coverage/**'
+
+custom:
+  optimize:
+    external: ['swagger-ui-dist']
+  stage: ${opt:stage, 'local'}
+  bossaboxApiUrl:
+    local: ${ssm:BOSSABOX_API_URL_DEV~true}
+    dev: ${ssm:BOSSABOX_API_URL_DEV~true}
+    stage: ${ssm:BOSSABOX_API_URL_STAGE~true}
+    prod: ${ssm:BOSSABOX_API_URL_PROD~true}
+  authApiURL:
+    local: ${ssm:AUTH_API_URL_DEV~true}
+    dev: ${ssm:AUTH_API_URL_DEV~true}
+    stg: ${ssm:AUTH_API_URL_STAGE~true}
+    prod: ${ssm:AUTH_API_URL_PROD~true}
+  dbHost:
+    local: localhost
+    dev: ${ssm:BBNETWORK_DB_HOST_DEV~true}
+    stg: ${ssm:BBNETWORK_DB_HOST_STG~true}
+    prod: ${ssm:BBNETWORK_DB_HOST_PROD~true}
+  dbPort:
+    local: 5432
+    dev: ${ssm:BBNETWORK_DB_PORT_DEV~true}
+    stg: ${ssm:BBNETWORK_DB_PORT_STG~true}
+    prod: ${ssm:BBNETWORK_DB_PORT_PROD~true}
+  dbUser:
+    local: bbnetwork
+    dev: ${ssm:BBNETWORK_DB_USER_DEV~true}
+    stg: ${ssm:BBNETWORK_DB_USER_STG~true}
+    prod: ${ssm:BBNETWORK_DB_USER_PROD~true}
+  dbPass:
+    local: bbnetwork123
+    dev: ${ssm:BBNETWORK_DB_PASS_DEV~true}
+    stg: ${ssm:BBNETWORK_DB_PASS_STG~true}
+    prod: ${ssm:BBNETWORK_DB_PASS_PROD~true}
+  cliToken:
+    local: rL5P2#hOCyP7aiPsNRro
+    dev: ${ssm:BBNETWORK_CLI_TOKEN_DEV~true}
+    stg: ${ssm:BBNETWORK_CLI_TOKEN_STG~true}
+    prod: ${ssm:BBNETWORK_CLI_TOKEN_PROD~true}
+    
+functions:
+  main:
+    handler: dist/lambda.handler
+    events:
+      - http:
+          cors: true
+          method: any
+          path: /{proxy+}
+    environment:
+      NODE_ENV: ${self:custom.stage}
+      TYPEORM_CONNECTION: postgres
+      TYPEORM_DATABASE: postgres
+      TYPEORM_SYNCHRONIZE: false
+      TYPEORM_LOGGING: false
+      TYPEORM_HOST: ${self:custom.dbHost.${self:custom.stage}}
+      TYPEORM_PORT: ${self:custom.dbPort.${self:custom.stage}}
+      TYPEORM_USERNAME: ${self:custom.dbUser.${self:custom.stage}}
+      TYPEORM_PASSWORD: ${self:custom.dbPass.${self:custom.stage}}
+      TYPEORM_ENTITIES: dist/domain/entities/*.entity.js
+      TYPEORM_ENTITIES_DIR: src/domain/entities
+      TYPEORM_MIGRATIONS: dist/database/migrations/*.js
+      TYPEORM_MIGRATIONS_DIR: src/database/migrations
+      AUTH_API_URL: ${self:custom.authApiURL.${self:custom.stage}}
+      BOSSABOX_API_URL: ${self:custom.bossaboxApiUrl.${self:custom.stage}}
+      LOGLEVEL: 3
+      CLI_TOKEN: ${self:custom.cliToken.${self:custom.stage}}
+      SLACK_WORKSPACE_URL: https://hubs.li/H0VQ1ck0

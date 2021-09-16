@@ -1,0 +1,21 @@
+version: '3.5'
+
+services:
+  db:
+    container_name: c-bbox-network-db
+    image: postgres:10.5-alpine
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=bbnetwork
+      - POSTGRES_PASSWORD=bbnetwork123
+  dbadmin:
+    container_name: c-bbox-network-dbadmin
+    image: dpage/pgadmin4
+    ports:
+      - 5431:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=pg@bossabox.com.br
+      - PGADMIN_DEFAULT_PASSWORD=password
+    logging:
+      driver: none
