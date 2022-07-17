@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Req, Get } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Req,
+  Get,
+  Query,
+  Request,
+} from '@nestjs/common';
 import { saveInterestsDto } from './dto/save-interests.dto';
 import { UsersService } from './users.service';
 
@@ -6,14 +14,23 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post('/labs-community')
-  async setMemberOfLabsCommunity(@Req() req) {
-    return await this.usersService.setMemberOfLabsCommunity(req);
-  }
-
-  @Post('/interests')
-  async saveInterests(@Body() interestsDto: saveInterestsDto, @Req() req) {
-    return await this.usersService.saveInterests(interestsDto, req.user._id);
+  @Get('/all')
+  async findAll(
+    @Request() req,
+    @Query('created_between') created_between,
+    @Query('name') name,
+    @Query('limit') limit = 10,
+    @Query('page') page = 1,
+  ) {
+    return await this.usersService.findAll(
+      {
+        limit,
+        page,
+        route: req.url,
+      },
+      created_between,
+      name,
+    );
   }
 
   @Get()

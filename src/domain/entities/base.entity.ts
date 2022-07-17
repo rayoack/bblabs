@@ -9,8 +9,8 @@ export abstract class Base {
   public id: number;
 
   @CreateDateColumn({ default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
-  public createdAt?: Date;
+  public created_at?: Date;
 
   @UpdateDateColumn({ default: () => 'CURRENT_TIMESTAMP', name: 'updated_at' })
-  public updatedAt?: Date;
+  public updated_at?: Date;
 }

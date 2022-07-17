@@ -4,83 +4,47 @@ import { UnexpectedException } from '../../exceptions/unexpected.exception';
 import { UserRepository } from './users.repository';
 import { Users } from '../entities';
 import { EntityNotFoundException } from '../../exceptions/entity-not-found.exception';
-import { UsersFactory } from './users.factory';
-import { saveInterestsDto } from './dto/save-interests.dto';
+import {
+  IPaginationOptions,
+  paginate,
+  Pagination,
+} from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(Users)
-    private userRepository: UserRepository,
-    private readonly usersFactory: UsersFactory,
+    private usersRepository: UserRepository,
   ) {}
 
-  async setMemberOfLabsCommunity(req) {
+  async findOne(user) {
     try {
-      const bboxUser = await this.userRepository.findOne({
-        bbox_id: req.user._id,
-      });
-      return await this.userRepository.update(bboxUser.id, {
-        is_member_of_labs_community: true,
-      });
-    } catch (err) {
-      throw new UnexpectedException(
-        'unexpeced-error-active-notfied-user',
-        'users.service.setMemberOfLabsCommunity',
-        err,
-      );
-    }
-  }
-
-  async saveInterests(body: saveInterestsDto, id: string): Promise<Users> {
-    try {
-      let user = await this.userRepository.findOne({
-        bbox_id: id,
-      });
-
-      if (!user) {
-        throw new EntityNotFoundException(
-          'unexpeced-error-save-interests',
-          'users.service.saveInterests',
-          id,
-        );
-      }
-
-      user = await this.usersFactory.setInterestsForm({ ...user }, body);
-
-      return await this.userRepository.save(user);
-    } catch (err) {
-      throw new UnexpectedException(
-        'unexpeced-error-save-interests',
-        'users.service.saveInterests',
-        err,
-      );
-    }
-  }
-
-  async findOne(user): Promise<Users> {
-    try {
-      const userFound = await this.userRepository.findOne({
-        bbox_id: user._id,
-      });
-
-      if (!userFound) {
-        const newUser = {
-          bbox_id: user._id,
-          email: user.email,
-          name: user.fullName,
-          notified: false,
-        };
-
-        return await this.userRepository.save(newUser);
-      } else {
-        return userFound;
-      }
+      return user;
     } catch (err) {
       throw new UnexpectedException(
         'unexpeced-error-find-one-user',
         'users.service.findOne',
         user._id,
+      );
+    }
+  }
+
+  async findAll(
+    options: IPaginationOptions<any>,
+    created_between: string,
+    name: string,
+  ): Promise<Pagination<Users>> {
+    try {
+      return await paginate<Users>(this.usersRepository, options, {
+        order: { id: 'ASC' },
+        relations: ['attachment', 'profile'],
+        // where: { status: In(status.split(',')) },
+      });
+    } catch (err) {
+      throw new UnexpectedException(
+        'unexpeced-error-find-all-challenges',
+        'contest-challenges.service.findAll',
+        err,
       );
     }
   }
